@@ -31,11 +31,12 @@ export default function CalendarClient({ searchParams }: { searchParams?: Search
     localCtx.clearRect(0, 0, w, h);
     localCtx.imageSmoothingEnabled = false;
 
-    // Background
-    localCtx.fillStyle = "#0f0f0f";
+    // Background (use red for exported/preview images)
+    localCtx.fillStyle = "#1A1A1A";
     localCtx.fillRect(0, 0, w, h);
 
-    const padding = Math.round(Math.min(w, h) * 0.04);
+    // increased canvas padding for more left/right spacing on lock screens
+    const padding = Math.round(Math.min(w, h) * 0.08);
     const gridX = padding;
     const gridY = padding;
     const gridW = w - padding * 2;
@@ -64,8 +65,8 @@ export default function CalendarClient({ searchParams }: { searchParams?: Search
       "Dec",
     ];
 
-    // Size scaling
-    const monthLabelHeight = Math.max(18, Math.round(Math.min(w, h) * 0.02));
+    // Size scaling (increase label size for readability on device lock screens)
+    const monthLabelHeight = Math.max(20, Math.round(Math.min(w, h) * 0.028));
 
     for (let m = 0; m < 12; m++) {
       const col = m % cols;
@@ -73,17 +74,16 @@ export default function CalendarClient({ searchParams }: { searchParams?: Search
       const cellX = gridX + col * cellW + Math.round((gridW / cols - cellW) / 2);
       const cellY = gridY + row * cellH + Math.round((gridH / rows - cellH) / 2);
 
-      // Draw month label
-      localCtx.fillStyle = "#9aa0a6";
-      const fontSize = Math.max(12, Math.round(monthLabelHeight * 0.95));
+      // Draw month label (use a brighter label color for contrast)
+      localCtx.fillStyle = "#e6eef3";
+      const fontSize = Math.max(18, Math.round(monthLabelHeight * 1.05));
       localCtx.font = `${fontSize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`;
       localCtx.textAlign = "center";
       localCtx.textBaseline = "top";
       localCtx.fillText(monthNames[m], cellX + cellW / 2, cellY);
 
-      const innerPad = Math.round(Math.min(cellW, cellH) * 0.06);
+      const innerPad = Math.round(Math.min(cellW, cellH) * 0.0);
       const daysAreaX = cellX + innerPad;
-      const daysAreaY = cellY + monthLabelHeight + innerPad;
       const daysAreaW = cellW - innerPad * 2;
       const daysAreaH = cellH - monthLabelHeight - innerPad * 2;
 
@@ -99,7 +99,7 @@ export default function CalendarClient({ searchParams }: { searchParams?: Search
       // This keeps gaps proportional and avoids large empty vertical gaps.
       const spacingRatio = 0.4; // gap = dotSize * spacingRatio
       const dotSize = Math.max(
-        4,
+        2,
         Math.floor(
           Math.min(
             daysAreaW / (maxCols + (maxCols - 1) * spacingRatio),
@@ -111,6 +111,11 @@ export default function CalendarClient({ searchParams }: { searchParams?: Search
       const gapX = Math.round(dotSize * spacingRatio);
       const naturalGapY = maxRows > 1 ? availableH / (maxRows - 1) : 0;
       const gapY = Math.max(2, Math.min(naturalGapY, dotSize * 0.6));
+
+      // center the dots grid vertically within the days area
+      const totalDaysHeight = maxRows * dotSize + Math.max(0, (maxRows - 1) * gapY);
+      const offsetY = Math.max(0, Math.round((daysAreaH - totalDaysHeight) / 2));
+      const daysAreaY = cellY + monthLabelHeight + innerPad + offsetY;
 
       // Draw days: place them in rows (week rows) and 7 columns (Sun..Sat)
       for (let d = 1; d <= daysInMonth; d++) {
@@ -143,8 +148,8 @@ export default function CalendarClient({ searchParams }: { searchParams?: Search
       const daysLeft = totalDays - daysElapsed;
       const percent = Math.floor((daysElapsed / totalDays) * 100);
       const footer = `${daysLeft} days left • ${percent}%`;
-      localCtx.fillStyle = "#9aa0a6";
-      const fsize = Math.max(12, Math.round(Math.min(w, h) * 0.014));
+      localCtx.fillStyle = "#e6eef3";
+      const fsize = Math.max(14, Math.round(Math.min(w, h) * 0.02));
       localCtx.font = `${fsize}px -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial`;
       localCtx.textAlign = "center";
       localCtx.fillText(footer, w / 2, h - padding / 1.5 - fsize);

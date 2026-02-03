@@ -29,8 +29,9 @@ function generateSvg(width: number, height: number) {
   const calW = Math.min(calMaxW, safeW);
   const calH = Math.min(calMaxH, safeH);
 
-  // 5% internal inset padding to account for iOS wallpaper zoom
-  const insetPadX = Math.round(calW * 0.05);
+  // internal inset padding to account for iOS wallpaper zoom
+  // (increase horizontal inset so calendar has more side padding on lock-screen)
+  const insetPadX = Math.round(calW * 0.1);
   const insetPadY = Math.round(calH * 0.05);
 
   // calendar origin (centered horizontally in canvas, vertically within safe area)
@@ -51,15 +52,19 @@ function generateSvg(width: number, height: number) {
 
   let svg = '';
   svg += `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
+  // ensure SVG fallback has a red background when returned directly
+  svg += `<rect width="100%" height="100%" fill="#1A1A1A" />`;
   // NOTE: intentionally do not draw any background rectangles, panels, frames or gradients.
   // The final PNG will be created by compositing this SVG over a solid Sharp background
   // so the canvas color is uniform as required.
 
-  const monthLabelHeight = Math.max(14, Math.round(Math.min(width, height) * 0.02));
+  // increase month label size for better legibility on lock screens
+  const monthLabelHeight = Math.max(20, Math.round(Math.min(width, height) * 0.028));
   const dotFillFuture = '#555555';
   const dotFillPast = '#ffffff';
   const dotFillToday = '#ff3b3b';
-  const labelFill = '#9aa0a6';
+  // brighter, higher-contrast label color for lock-screen readability
+  const labelFill = '#e6eef3';
 
   for (let m = 0; m < 12; m++) {
   const col = m % cols;
@@ -87,9 +92,9 @@ function generateSvg(width: number, height: number) {
     const maxCols = 7;
     const maxRows = Math.max(weeks, 1);
   const spacingRatio = 0.4;
-  // compute dot diameter to fit, then enforce even-numbered radius
+  // compute dot diameter to fit, using a reasonable minimum for legibility
   const maxDiam = Math.floor(Math.min(daysAreaW / (maxCols + (maxCols - 1) * spacingRatio), daysAreaH / (maxRows + (maxRows - 1) * spacingRatio)));
-  const diam = Math.max(4, maxDiam);
+  const diam = Math.max(2, maxDiam);
   let radius = Math.floor(diam / 2);
   if (radius % 2 !== 0) radius = Math.max(2, radius - 1);
   const dotDiameter = radius * 2;
@@ -97,6 +102,11 @@ function generateSvg(width: number, height: number) {
   const gapX = Math.round(dotDiameter * spacingRatio);
   const naturalGapY = maxRows > 1 ? availableH / (maxRows - 1) : 0;
   const gapY = Math.max(2, Math.min(Math.round(naturalGapY), Math.round(dotDiameter * 0.6)));
+
+  // center the dots grid vertically within the days area to avoid large empty stripes
+  const totalDaysHeight = maxRows * dotDiameter + Math.max(0, (maxRows - 1) * gapY);
+  const offsetY = Math.max(0, Math.round((daysAreaH - totalDaysHeight) / 2));
+  const centeredDaysAreaY = daysAreaY + offsetY;
 
     for (let d = 1; d <= daysInMonth; d++) {
       const index = firstDay + (d - 1);
@@ -114,7 +124,7 @@ function generateSvg(width: number, height: number) {
     }
   }
 
-  try {
+    try {
     const now = new Date();
     const start = new Date(now.getFullYear(), 0, 1);
     const end = new Date(now.getFullYear() + 1, 0, 1);
@@ -125,7 +135,7 @@ function generateSvg(width: number, height: number) {
     const footer = `${daysLeft} days left • ${percent}%`;
   // footer inside calendar area (above bottom inset)
   const footerY = calOriginY + calH - Math.round(insetPadY / 1.5);
-  svg += `<text x="${calOriginX + Math.round(calW/2)}" y="${footerY}" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial" font-size="${Math.max(10, Math.round(Math.min(calW, calH) * 0.014))}" fill="${labelFill}">${footer}</text>`;
+  svg += `<text x="${calOriginX + Math.round(calW/2)}" y="${footerY}" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial" font-size="${Math.max(42, Math.round(Math.min(calW, calH) * 0.018))}" fill="${labelFill}">${footer}</text>`;
   } catch {}
 
   svg += `</svg>`;
@@ -151,7 +161,7 @@ export async function GET(req: Request) {
           width: w,
           height: h,
           channels: 4,
-          background: '#0f0f0f',
+          background: '#1A1A1A',
         },
       });
       const svgBuffer = Buffer.from(svg);
