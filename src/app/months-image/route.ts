@@ -166,11 +166,18 @@ export async function GET(req: Request) {
       });
       const svgBuffer = Buffer.from(svg);
       const composed = await bg.composite([{ input: svgBuffer }]).png({ quality: 100 }).toBuffer();
+      const now = new Date();
+      const fname = `months-image-${now.toISOString().slice(0,10)}.png`;
       return new Response(new Uint8Array(composed), {
-        headers: { 'Content-Type': 'image/png' },
+        headers: {
+          'Content-Type': 'image/png',
+          'Content-Disposition': `attachment; filename="${fname}"`,
+        },
       });
     } catch {
-      const headers = new Headers({ 'Content-Type': 'image/svg+xml; charset=utf-8' });
+      const now = new Date();
+      const fname = `months-image-${now.toISOString().slice(0,10)}.svg`;
+      const headers = new Headers({ 'Content-Type': 'image/svg+xml; charset=utf-8', 'Content-Disposition': `attachment; filename="${fname}"` });
       return new Response(svg, { headers });
     }
   } catch {
